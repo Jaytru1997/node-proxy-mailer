@@ -14,6 +14,37 @@ const secureContext = tls.createSecureContext({
 
 const { letter } = require("./templates/letter");
 
+// Extract the domain from the SMTP credential
+function extractDomain(smtpHost) {
+  const parts = smtpHost.split(".");
+  if (parts.length < 2) {
+    throw new Error("Invalid SMTP host");
+  }
+  return parts.slice(-2).join("."); // Get the top-level domain (e.g., "example.com")
+}
+
+// Fetch DNS records
+async function fetchDNSRecords(domain) {
+  try {
+    const spfRecords = await dns.resolveTxt(domain);
+    const dkimRecords = await dns.resolveTxt(`default._domainkey.${domain}`);
+    const dmarcRecords = await dns.resolveTxt(`_dmarc.${domain}`);
+
+    return {
+      SPF: spfRecords.filter((record) =>
+        record.some((txt) => txt.includes("v=spf1"))
+      ),
+      DKIM: dkimRecords,
+      DMARC: dmarcRecords.filter((record) =>
+        record.some((txt) => txt.includes("v=DMARC1"))
+      ),
+    };
+  } catch (error) {
+    console.error(`Failed to fetch DNS records for ${domain}:`, error.message);
+    return null;
+  }
+}
+
 /**
  * Generate a random integer between min (inclusive) and max (inclusive).
  */
@@ -23,76 +54,93 @@ function randomInt(min, max) {
 const logger = require("./logger");
 
 // Mailgun-like domains and IP ranges
-function mailgun(recipient) {
-  const domains = [
-    "mg.mailgun.org",
-    "sandbox.mailgun.org",
-    "mxa.mailgun.org",
-    "mxb.mailgun.org",
-    "smtp.mailgun.org",
-    "notifications.mailgun.org",
-    "alerts.mailgun.org",
-    "updates.mailgun.org",
-    "tracking.mailgun.org",
-    "relay.mailgun.org",
-    "bounce.mailgun.org",
-    "email.mailgun.net",
-    "delivery.mailgun.net",
-    "messages.mailgun.net",
-    "api.mailgun.net",
-    "support.mailgun.com",
-    "mailgunapi.net",
-    "transactional.mailgun.net",
-    "mg.mailgun.net",
-    "smtp-relay.mailgun.net",
-    "bulk.mailgun.org",
-    "mg.customerupdatemail.net",
-    "mail.mailgun.net",
-  ];
+async function mailgun(recipient) {
   const mailgunIpRange = ["198.61.254.", "209.61.151."];
-
-  // Select a random domain and IP
-  const selectedDomain = domains[Math.floor(Math.random() * domains.length)];
   const selectedIp = `${
     mailgunIpRange[Math.floor(Math.random() * mailgunIpRange.length)]
   }${randomInt(1, 254)}`;
 
   // Generate a realistic future timestamp
-  const futureTime = new Date(Date.now() + randomInt(5, 10) * 60 * 1000);
-  const formattedTime = futureTime.toUTCString();
+  const domain = extractDomain(smtpConfig.smtp_server);
+  if (domain === "mailgun.org") {
+    console.log(`Fetching DNS records for domain: ${domain}`);
 
-  // Email options
-  const mailOptions = {
-    "X-Priority": "1",
-    "X-MSMail-Priority": "High",
-    Importance: "High",
+    // const records = await fetchDNSRecords(domain);
+    const mailOptions = {
+      "X-Priority": "1",
+      "X-MSMail-Priority": "High",
+      Importance: "High",
+    };
 
-    "X-Mailer": "Mailgun SMTP Server",
-    Received: `from ${selectedDomain} (${selectedDomain} [${selectedIp}]) by smtp-relay.yourserver.com;`,
-    "Received-SPF": `pass (mailgun.org: domain of sender@${selectedDomain} designates ${selectedIp} as permitted sender)`,
-    "Authentication-Results": `mailgun.org; spf=pass smtp.mailfrom=sender@${selectedDomain}; dkim=pass header.i=@${selectedDomain}; dmarc=pass header.from=${selectedDomain}`,
-    "X-Mailgun-Tag": "transactional-email",
-    "X-Mailgun-Drop-Message": "yes",
-    "X-Mailgun-Track": "yes",
-    "X-Mailgun-Track-Clicks": "yes",
-    "X-Mailgun-Track-Opens": "yes",
-    "X-Mailgun-Sending-Ip": selectedIp,
-    "X-Mailgun-Sending-Ip-Pool": "bulk-email-pool",
-    "X-Mailgun-Require-TLS": "yes",
-    "X-Mailgun-Skip-Verification": "yes",
-    "X-Mailgun-Secondary-DKIM": `${selectedDomain},s1`,
-    "X-Mailgun-Secondary-DKIM-Public": `public.${selectedDomain}/s1`,
-    "X-Mailgun-Deliver-By": formattedTime,
-    "X-Mailgun-Delivery-Time-Optimize-Period": "5h",
-    "X-Mailgun-Time-Zone-Localize": "10:00AM",
-    "X-Mailgun-Recipient-Variables": `{${recipient.email}: {"first":"${
-      recipient.name
-    }", "id":${randomInt(1, 255)}}}`,
-    "X-Mailgun-Template-Name": "welcome-email",
-    "X-Mailgun-Template-Version": "v1",
-  };
+    return mailOptions;
+  }
+  if (!domain === "mailgun.org") {
+    const domains = [
+      "mg.mailgun.org",
+      "sandbox.mailgun.org",
+      "mxa.mailgun.org",
+      "mxb.mailgun.org",
+      "smtp.mailgun.org",
+      "notifications.mailgun.org",
+      "alerts.mailgun.org",
+      "updates.mailgun.org",
+      "tracking.mailgun.org",
+      "relay.mailgun.org",
+      "bounce.mailgun.org",
+      "email.mailgun.net",
+      "delivery.mailgun.net",
+      "messages.mailgun.net",
+      "api.mailgun.net",
+      "support.mailgun.com",
+      "mailgunapi.net",
+      "transactional.mailgun.net",
+      "mg.mailgun.net",
+      "smtp-relay.mailgun.net",
+      "bulk.mailgun.org",
+      "mg.customerupdatemail.net",
+      "mail.mailgun.net",
+    ];
 
-  return mailOptions;
+    // Select a random domain and IP
+    const selectedDomain = domains[Math.floor(Math.random() * domains.length)];
+
+    // Generate a realistic future timestamp
+    const futureTime = new Date(Date.now() + randomInt(5, 10) * 60 * 1000);
+    const formattedTime = futureTime.toUTCString();
+
+    // Email options
+    const mailOptions = {
+      "X-Priority": "1",
+      "X-MSMail-Priority": "High",
+      Importance: "High",
+
+      "X-Mailer": "Mailgun SMTP Server",
+      Received: `from ${selectedDomain} (${selectedDomain} [${selectedIp}]) by smtp-relay.yourserver.com;`,
+      "Received-SPF": `pass (mailgun.org: domain of sender@${selectedDomain} designates ${selectedIp} as permitted sender)`,
+      "Authentication-Results": `mailgun.org; spf=pass smtp.mailfrom=sender@${selectedDomain}; dkim=pass header.i=@${selectedDomain}; dmarc=pass header.from=${selectedDomain}`,
+      "X-Mailgun-Tag": "transactional-email",
+      "X-Mailgun-Drop-Message": "yes",
+      "X-Mailgun-Track": "yes",
+      "X-Mailgun-Track-Clicks": "yes",
+      "X-Mailgun-Track-Opens": "yes",
+      "X-Mailgun-Sending-Ip": selectedIp,
+      "X-Mailgun-Sending-Ip-Pool": "bulk-email-pool",
+      "X-Mailgun-Require-TLS": "yes",
+      "X-Mailgun-Skip-Verification": "yes",
+      "X-Mailgun-Secondary-DKIM": `${selectedDomain},s1`,
+      "X-Mailgun-Secondary-DKIM-Public": `public.${selectedDomain}/s1`,
+      "X-Mailgun-Deliver-By": formattedTime,
+      "X-Mailgun-Delivery-Time-Optimize-Period": "5h",
+      "X-Mailgun-Time-Zone-Localize": "10:00AM",
+      "X-Mailgun-Recipient-Variables": `{${recipient.email}: {"first":"${
+        recipient.name
+      }", "id":${randomInt(1, 255)}}}`,
+      "X-Mailgun-Template-Name": "welcome-email",
+      "X-Mailgun-Template-Version": "v1",
+    };
+
+    return mailOptions;
+  }
 }
 
 function getDate30DaysFromToday() {
