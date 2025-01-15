@@ -54,7 +54,7 @@ function randomInt(min, max) {
 const logger = require("./logger");
 
 // Mailgun-like domains and IP ranges
-async function mailgun(recipient) {
+async function mailgun(smtpConfig, recipient) {
   const mailgunIpRange = ["198.61.254.", "209.61.151."];
   const selectedIp = `${
     mailgunIpRange[Math.floor(Math.random() * mailgunIpRange.length)]
@@ -340,7 +340,7 @@ async function sendEmail(
       //   filename: attachment.filename,
       //   path: attachment.path,
       // })),
-      headers: mailgun(recipient),
+      headers: mailgun(smtpConfig, recipient),
     };
 
     try {
