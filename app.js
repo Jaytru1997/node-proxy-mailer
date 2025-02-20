@@ -428,12 +428,15 @@ Sincerely ,`;
       // List of attachment files
       const attachments = [
         {
-          filename: "file_1.pdf",
-          path: path.join(attachmentsFolder, "file_1.pdf"),
+          filename: "LETTER OF DEMAND AGAINST YOU ONLY@@.pdf",
+          path: path.join(
+            attachmentsFolder,
+            "LETTER OF DEMAND AGAINST YOU ONLY@@.pdf"
+          ),
         },
         {
-          filename: "file_2.pdf",
-          path: path.join(attachmentsFolder, "file_2.pdf"),
+          filename: "Payment@Feb 2025.pdf",
+          path: path.join(attachmentsFolder, "Payment@Feb 2025.pdf"),
         },
       ];
       await sendEmail(

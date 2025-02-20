@@ -23,3 +23,10 @@
 {"level":"info","message":"Number of emails sent: 4","timestamp":"2025-02-20T07:23:55.504Z"}
 {"level":"info","message":"Number of emails sent: 5","timestamp":"2025-02-20T07:23:55.508Z"}
 {"level":"info","message":"Batch emails sent successfully.","timestamp":"2025-02-20T07:23:55.509Z"}
+{"level":"info","message":"Resuming from recipient index: 0","timestamp":"2025-02-20T07:28:53.873Z"}
+{"level":"info","message":"Number of emails sent: 1","timestamp":"2025-02-20T07:28:53.880Z"}
+{"level":"info","message":"Number of emails sent: 2","timestamp":"2025-02-20T07:28:53.885Z"}
+{"level":"info","message":"Number of emails sent: 3","timestamp":"2025-02-20T07:28:53.888Z"}
+{"level":"info","message":"Number of emails sent: 4","timestamp":"2025-02-20T07:28:53.891Z"}
+{"level":"info","message":"Number of emails sent: 5","timestamp":"2025-02-20T07:28:53.893Z"}
+{"level":"info","message":"Batch emails sent successfully.","timestamp":"2025-02-20T07:28:53.894Z"}
