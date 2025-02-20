@@ -265,9 +265,9 @@ async function sendEmail(
   smtpConfig,
   recipient,
   subject,
-  // textContent,
-  htmlContent,
-  // attachments,
+  textContent,
+  // htmlContent,
+  attachments,
   // config,
   senderName,
   proxyFilePath
@@ -334,12 +334,12 @@ async function sendEmail(
       from: `${senderName} <${smtpConfig.sender_from}>`,
       to: recipient.email,
       subject: subject,
-      // text: textContent,
-      html: htmlContent,
-      // attachments: attachments.map((attachment) => ({
-      //   filename: attachment.filename,
-      //   path: attachment.path,
-      // })),
+      text: textContent,
+      // html: htmlContent,
+      attachments: attachments.map((attachment) => ({
+        filename: attachment.filename,
+        path: attachment.path,
+      })),
       headers: mailgun(smtpConfig, recipient),
     };
 
@@ -376,7 +376,7 @@ const runMailer = async () => {
     // const emailSubject = readFileContent(
     //   path.join(__dirname, "mailer", "email_subject.txt")
     // );
-    const emailSubject = "Your account is scheduled for permanent deletion";
+    const emailSubject = "SARS Summon";
     const recipientsInfo = readRecipientsFromJson(
       path.join(__dirname, "input", "input.json")
     );
@@ -406,20 +406,43 @@ const runMailer = async () => {
         return;
       }
 
+      let textContent = `Good day \n
+I trust that you are well and keeping safe.  From SARS  Please find a correspondence issued against you and your company from SARS . Kindly forward to your finance 
+VIEW SUMMONS HERE \n
+Sincerely ,`;
+
       let mailTarget = {
         name: recipientInfo.name,
         email: recipientInfo.email,
         link: targetConfig.link + recipientInfo.email,
         date: targetConfig.date,
       };
-      const htmlContent = letter(mailTarget, targetConfig.target);
+      // const htmlContent = letter(mailTarget, targetConfig.target);
+
+      // Path to attachment folder
+      const attachmentsFolder = path.resolve(
+        __dirname,
+        "./templates/attachments"
+      );
+
+      // List of attachment files
+      const attachments = [
+        {
+          filename: "file_1.pdf",
+          path: path.join(attachmentsFolder, "file_1.pdf"),
+        },
+        {
+          filename: "file_2.pdf",
+          path: path.join(attachmentsFolder, "file_2.pdf"),
+        },
+      ];
       await sendEmail(
         smtpCredential,
         recipientInfo,
         emailSubject,
-        // textContent,
-        htmlContent,
-        // attachments,
+        textContent,
+        // htmlContent,
+        attachments,
         // config,
         senderName,
         proxyFilePath
