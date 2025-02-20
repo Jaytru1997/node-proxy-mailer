@@ -239,6 +239,17 @@ function findNearestProxy(proxies, recipientLocation) {
 }
 
 /**
+ * Return a randomly selected proxy
+ */
+function getRandomProxy(proxies) {
+  if (!proxies || proxies.length === 0) {
+    return null;
+  }
+  const randomIndex = Math.floor(Math.random() * proxies.length);
+  return proxies[randomIndex];
+}
+
+/**
  * Calculate distance between two geographical points using the Haversine formula.
  */
 function calculateDistance(lat1, lon1, lat2, lon2) {
@@ -295,7 +306,7 @@ async function sendEmail(
     }
 
     // Find the nearest proxy
-    const nearestProxy = findNearestProxy(proxies, recipientLocation);
+    const nearestProxy = getRandomProxy(proxies);
     if (!nearestProxy) {
       console.error("No suitable proxy found.");
       return;
