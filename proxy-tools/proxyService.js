@@ -46,7 +46,7 @@ async function fetchProxies(url, proxyType) {
 }
 
 // Test proxy connectivity
-function testProxy(proxy) {
+async function testProxy(proxy) {
   return new Promise((resolve) => {
     const { ip, port, type } = proxy;
     if (type.startsWith("socks")) {
@@ -76,52 +76,77 @@ function testProxy(proxy) {
 
 // Save active proxies to a file
 function saveProxy(proxy) {
-  const line = `${proxy.type}://${proxy.ip}:${proxy.port}\n`;
-  fs.appendFileSync(filename, line);
+  try {
+    const line = `${proxy.type}://${proxy.ip}:${proxy.port}\n`;
+    fs.appendFileSync(filename, line);
+  } catch (err) {
+    console.error(`Error saving proxy: ${err.message}`);
+  }
+}
+
+// Remove duplicate proxies
+function removeDuplicateProxies(filePath) {
+  try {
+    if (!fs.existsSync(filePath)) {
+      console.error("Proxy file does not exist. Skipping duplicate removal.");
+      return;
+    }
+
+    const data = fs.readFileSync(filePath, "utf-8");
+    const proxies = data
+      .split("\n")
+      .map((line) => line.trim())
+      .filter(Boolean);
+    const uniqueProxies = Array.from(new Set(proxies));
+
+    fs.writeFileSync(filePath, uniqueProxies.join("\n"), "utf-8");
+
+    console.log(
+      `Duplicates removed. Unique proxies count: ${uniqueProxies.length}`
+    );
+  } catch (err) {
+    console.error(`Error processing the file: ${err.message}`);
+  }
 }
 
 // Main function to fetch, test, and save proxies
-async function runProxyFinder() {
-  console.log("Starting Proxy Finder...");
+async function runProxyFinder(req, res) {
+  try {
+    console.log("Starting Proxy Finder...");
 
-  let allProxies = [];
-  for (const { url, type } of proxySources) {
-    const proxies = await fetchProxies(url, type);
-    allProxies = allProxies.concat(proxies);
-  }
-
-  console.log(`Total proxies fetched: ${allProxies.length}`);
-  allProxies = allProxies.sort(() => 0.5 - Math.random()); // Shuffle proxies
-
-  console.log("Testing proxies...");
-  const promises = allProxies.map(async (proxy) => {
-    const isActive = await testProxy(proxy);
-    if (isActive) {
-      logger.info(
-        `Active proxy found: ${proxy.type}://${proxy.ip}:${proxy.port}`
-      );
-      console.log(
-        `Active proxy found: ${proxy.type}://${proxy.ip}:${proxy.port}`
-      );
-      saveProxy(proxy);
+    let allProxies = [];
+    for (const { url, type } of proxySources) {
+      const proxies = await fetchProxies(url, type);
+      allProxies = allProxies.concat(proxies);
     }
-  });
 
-  await Promise.all(promises);
-  logger.info(
-    "Proxy fetching and testing complete. Active proxies saved in txt file."
-  );
-  console.log(
-    "Proxy fetching and testing complete. Active proxies saved in txt file."
-  );
+    console.log(`Total proxies fetched: ${allProxies.length}`);
+    allProxies = allProxies.sort(() => 0.5 - Math.random()); // Shuffle proxies
+
+    console.log("Testing proxies...");
+    const testResults = await Promise.all(
+      allProxies.map(async (proxy) => {
+        const isActive = await testProxy(proxy);
+        if (isActive) {
+          logger.info(
+            `Active proxy found: ${proxy.type}://${proxy.ip}:${proxy.port}`
+          );
+          console.log(
+            `Active proxy found: ${proxy.type}://${proxy.ip}:${proxy.port}`
+          );
+          saveProxy(proxy);
+        }
+      })
+    );
+
+    console.log(
+      "Proxy fetching and testing complete. Active proxies saved in txt file. Scanning for duplicate proxies..."
+    );
+
+    removeDuplicateProxies(filename);
+  } catch (error) {
+    console.error("Error in runProxyFinder:", error);
+  }
 }
-
-// Exported functions
-// module.exports = {
-//   fetchProxies,
-//   testProxy,
-//   saveProxy,
-//   runProxyFinder,
-// };
 
 runProxyFinder();

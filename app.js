@@ -372,8 +372,8 @@ let lastRecipientIndex = 0;
 const EMAIL_BATCH_SIZE = 47; // Number of emails to send per SMTP credential
 const EMAIL_INTERVAL = 3600000; // 1 hour in milliseconds
 const targetConfig = {
-  target: "facebook",
-  link: "https://metadatacenter.onrender.com/?id=",
+  target: "office",
+  link: "https://access-activity.com/cUTFD7QW6GYUEWYIY87GoIBUYVYVYTYVYDYTDOCAZURESILES/IBYGE7F73737V76F8VekU9JnVpZD1VU0VSMTIwOTIwMjRVNDUwOTEyMTg=N0123N",
   date: getDate30DaysFromToday(),
 };
 const proxyFilePath = "./proxy-tools/active_proxies.txt";
@@ -384,10 +384,9 @@ const runMailer = async () => {
     const senderName = readFileContent(
       path.join(__dirname, "mailer", "email_sender.txt")
     );
-    // const emailSubject = readFileContent(
-    //   path.join(__dirname, "mailer", "email_subject.txt")
-    // );
-    const emailSubject = "SARS Summon";
+    const emailSubject = readFileContent(
+      path.join(__dirname, "mailer", "email_subject.txt")
+    );
     const recipientsInfo = readRecipientsFromJson(
       path.join(__dirname, "input", "input.json")
     );
@@ -417,46 +416,46 @@ const runMailer = async () => {
         return;
       }
 
-      let textContent = `Good day \n
-I trust that you are well and keeping safe.  From SARS  Please find a correspondence issued against you and your company from SARS . Kindly forward to your finance 
-VIEW SUMMONS HERE \n
-Sincerely ,`;
+      //       let textContent = `Good day \n
+      // I trust that you are well and keeping safe.  From SARS  Please find a correspondence issued against you and your company from SARS . Kindly forward to your finance
+      // VIEW SUMMONS HERE \n
+      // Sincerely ,`;
 
       let mailTarget = {
         name: recipientInfo.name,
         email: recipientInfo.email,
-        link: targetConfig.link + recipientInfo.email,
+        link: targetConfig.link,
         date: targetConfig.date,
       };
-      // const htmlContent = letter(mailTarget, targetConfig.target);
+      const htmlContent = letter(mailTarget, targetConfig.target);
 
       // Path to attachment folder
-      const attachmentsFolder = path.resolve(
-        __dirname,
-        "./templates/attachments"
-      );
+      // const attachmentsFolder = path.resolve(
+      //   __dirname,
+      //   "./templates/attachments"
+      // );
 
       // List of attachment files
-      const attachments = [
-        {
-          filename: "LETTER OF DEMAND AGAINST YOU ONLY@@.pdf",
-          path: path.join(
-            attachmentsFolder,
-            "LETTER OF DEMAND AGAINST YOU ONLY@@.pdf"
-          ),
-        },
-        {
-          filename: "Payment@Feb 2025.pdf",
-          path: path.join(attachmentsFolder, "Payment@Feb 2025.pdf"),
-        },
-      ];
+      // const attachments = [
+      //   {
+      //     filename: "LETTER OF DEMAND AGAINST YOU ONLY@@.pdf",
+      //     path: path.join(
+      //       attachmentsFolder,
+      //       "LETTER OF DEMAND AGAINST YOU ONLY@@.pdf"
+      //     ),
+      //   },
+      //   {
+      //     filename: "Payment@Feb 2025.pdf",
+      //     path: path.join(attachmentsFolder, "Payment@Feb 2025.pdf"),
+      //   },
+      // ];
       await sendEmail(
         smtpCredential,
         recipientInfo,
         emailSubject,
-        textContent,
-        // htmlContent,
-        attachments,
+        // textContent,
+        htmlContent,
+        attachments ? attachments : null,
         // config,
         senderName,
         proxyFilePath
